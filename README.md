@@ -38,6 +38,17 @@ npm run dev      # http://localhost:3000
 | `npm run lint` / `lint:fix`       | ESLint (flat config, Prettier-compatible)   |
 | `npm run format` / `format:check` | Prettier write / check                      |
 | `npm run typecheck`               | Generate route types and run `tsc --noEmit` |
-| `npm test`                        | Placeholder until Vitest lands (FLZ-3)      |
+| `npm test`                        | Unit tests (Vitest, single run)             |
+| `npm run test:watch`              | Unit tests in watch mode                    |
+| `npm run test:coverage`           | Unit tests with v8 coverage (80% gate)      |
+| `npm run test:e2e`                | Playwright e2e against a production build   |
+
+First e2e run: `npx playwright install chromium`.
+
+Tailwind CSS v4 runs through the `@tailwindcss/turbopack` loader configured in `next.config.ts` (there is no `postcss.config`).
 
 Git hooks: `pre-commit` runs ESLint + Prettier on staged files (lint-staged); `commit-msg` runs commitlint.
+
+## Environment
+
+Copy [`.env.example`](.env.example) to `.env.local` and fill in what you need; each key has a comment on where to get it. Variables are validated with zod in `src/env/` at startup and the app fails fast with a list of invalid keys. `SKIP_ENV_VALIDATION=1` bypasses validation (CI only).
