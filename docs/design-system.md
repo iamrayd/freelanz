@@ -863,8 +863,9 @@ Global:
 
 ---
 
-## 7. Open questions for the Lead
+## 7. Decisions (client sign-off 2026-10-12)
 
-1. Mobile bottom nav vs. hamburger: proposed bottom nav (4 items) for one-tap reach. Confirm.
-2. Source rating and user-base values on the Sources page need a cited origin (FLZ-10); the design shows "≈" to signal estimates.
-3. Theme preference persistence: cookie (proposed, avoids flash) vs. `user_profiles` column.
+1. **Mobile navigation:** bottom nav bar with 4 items (Feed, Saved, Sources, Profile). Approved.
+2. **Source rating and user-base values:** shown with "≈" as estimates; each value needs a cited origin, recorded in `docs/sources.md` during FLZ-10.
+3. **Theme persistence:** `theme` cookie read on the server before render (no flash); not stored in the database. Approved.
+4. **Visual direction "Field Ledger":** approved.
