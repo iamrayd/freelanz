@@ -1,5 +1,7 @@
 # Freelanz
 
+![CI](https://github.com/iamrayd/freelanz/actions/workflows/ci.yml/badge.svg)
+
 Daily-ranked feed of legit freelance and remote developer jobs, pulled from official APIs and RSS feeds.
 
 - Stack: Next.js · TypeScript · Tailwind CSS · Postgres (Neon) · Drizzle · Auth.js · Vercel
@@ -10,6 +12,14 @@ Daily-ranked feed of legit freelance and remote developer jobs, pulled from offi
 - Branches: `feat/FLZ-<id>-<slug>`, `fix/…`, `chore/…`, `docs/…`
 - Commits: [Conventional Commits](https://www.conventionalcommits.org/) (enforced by commitlint)
 - Every change goes through a PR with CI green and is squash-merged into `main`.
+- CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs lint, typecheck, format check, test and build on every PR to `main` and every push to `main`.
+
+### Branch protection
+
+The repo owner configures this once in GitHub settings:
+
+1. **Settings → Branches → Add branch ruleset** (or classic protection rule) for `main`: require a pull request before merging and require the `verify` status check to pass.
+2. **Settings → General → Pull Requests**: keep **Allow squash merging** ticked; untick **Allow merge commits** and **Allow rebase merging**.
 
 ## Getting started
 
