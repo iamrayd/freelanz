@@ -76,10 +76,10 @@ describe("createEnv", () => {
     expect(message).not.toContain("DATABASE_URL");
   });
 
-  it("skips validation when SKIP_ENV_VALIDATION=1", () => {
-    const source = { SKIP_ENV_VALIDATION: "1", CRON_SECRET: "short" };
-    expect(() => createEnv(envSchema, source)).not.toThrow();
-    expect(createEnv(envSchema, source).CRON_SECRET).toBe("short");
+  it("returns only schema keys, never the rest of the source", () => {
+    const env = createEnv(envSchema, { ...validEnv, PATH: "/usr/bin", SOME_SECRET: "leak" });
+    expect(env).not.toHaveProperty("PATH");
+    expect(env).not.toHaveProperty("SOME_SECRET");
   });
 
   it("validates the client schema on its own", () => {
@@ -87,6 +87,50 @@ describe("createEnv", () => {
     expect(() => createEnv(clientSchema, { NEXT_PUBLIC_APP_URL: "nope" })).toThrow(
       /NEXT_PUBLIC_APP_URL/,
     );
+  });
+});
+
+describe("createEnv with SKIP_ENV_VALIDATION", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("returns only schema keys", () => {
+    const env = createEnv(envSchema, {
+      SKIP_ENV_VALIDATION: "1",
+      PATH: "/usr/bin",
+      SOME_SECRET: "leak",
+      CRON_SECRET: "x".repeat(32),
+    });
+    expect(Object.keys(env).sort()).toEqual(["CRON_SECRET", "NEXT_PUBLIC_APP_URL", "NODE_ENV"]);
+    expect(env).not.toHaveProperty("SKIP_ENV_VALIDATION");
+    expect(env).not.toHaveProperty("PATH");
+    expect(env).not.toHaveProperty("SOME_SECRET");
+  });
+
+  it("applies defaults", () => {
+    const env = createEnv(envSchema, { SKIP_ENV_VALIDATION: "1" });
+    expect(env.NODE_ENV).toBe("development");
+    expect(env.NEXT_PUBLIC_APP_URL).toBe("http://localhost:3000");
+    expect(env.DATABASE_URL).toBeUndefined();
+  });
+
+  it("still rejects values that are present but invalid", () => {
+    expect(() => createEnv(envSchema, { SKIP_ENV_VALIDATION: "1", CRON_SECRET: "short" })).toThrow(
+      /CRON_SECRET/,
+    );
+  });
+
+  it("is refused when VERCEL_ENV=production", () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    expect(() => createEnv(envSchema, { SKIP_ENV_VALIDATION: "1" })).toThrow(
+      /not allowed when VERCEL_ENV=production/,
+    );
+  });
+
+  it("is allowed on Vercel preview deployments", () => {
+    vi.stubEnv("VERCEL_ENV", "preview");
+    expect(() => createEnv(envSchema, { SKIP_ENV_VALIDATION: "1" })).not.toThrow();
   });
 });
 

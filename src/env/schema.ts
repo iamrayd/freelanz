@@ -51,23 +51,35 @@ function formatIssues(issues: readonly z.core.$ZodIssue[]): string {
   return `Invalid environment variables:\n${lines.join("\n")}\nSee .env.example. Set SKIP_ENV_VALIDATION=1 to bypass (CI only).`;
 }
 
-/**
- * Parses `source` against `schema`. Throws a readable error on failure.
- * When `SKIP_ENV_VALIDATION` is set, returns the raw source unvalidated.
- */
-export function createEnv<T extends z.ZodObject>(
-  schema: T,
-  source: Source,
-  skipValidation = isSkipValidation(source),
-): z.infer<T> {
-  if (skipValidation) {
-    return source as z.infer<T>;
-  }
+function parseOrThrow<S extends z.ZodObject>(schema: S, source: Source): z.infer<S> {
   const result = schema.safeParse(withoutEmpty(source));
   if (!result.success) {
     throw new Error(formatIssues(result.error.issues));
   }
   return result.data;
+}
+
+/**
+ * Parses `source` against `schema` and returns only the schema's keys.
+ * Throws a readable error on failure.
+ *
+ * When `SKIP_ENV_VALIDATION` is set, missing keys are allowed (the schema is
+ * parsed as `.partial()`) so builds without secrets still work. Defaults are
+ * still applied and values that are present are still validated. Skipping is
+ * refused on Vercel production deployments.
+ */
+export function createEnv<T extends z.ZodObject>(
+  schema: T,
+  source: Source,
+  skipValidation = isSkipValidation(source),
+) {
+  if (skipValidation) {
+    if (process.env.VERCEL_ENV === "production") {
+      throw new Error("SKIP_ENV_VALIDATION is not allowed when VERCEL_ENV=production.");
+    }
+    return parseOrThrow(schema.partial(), source);
+  }
+  return parseOrThrow(schema, source);
 }
 
 export function isSkipValidation(source: Source): boolean {

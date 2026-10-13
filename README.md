@@ -51,4 +51,4 @@ Git hooks: `pre-commit` runs ESLint + Prettier on staged files (lint-staged); `c
 
 ## Environment
 
-Copy [`.env.example`](.env.example) to `.env.local` and fill in what you need; each key has a comment on where to get it. Variables are validated with zod in `src/env/` at startup and the app fails fast with a list of invalid keys. `SKIP_ENV_VALIDATION=1` bypasses validation (CI only).
+Copy [`.env.example`](.env.example) to `.env.local` and fill in what you need; each key has a comment on where to get it. Variables are validated with zod in `src/env/` at startup and the app fails fast with a list of invalid keys. `SKIP_ENV_VALIDATION=1` allows missing keys for builds without secrets (CI only; defaults still apply, present values are still validated, and it is refused when `VERCEL_ENV=production`).
