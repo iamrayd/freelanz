@@ -20,8 +20,8 @@ export default defineConfig({
     include: ["src/**/*.test.{ts,tsx}"],
     coverage: {
       provider: "v8",
-      include: ["src/lib/**", "src/server/**", "src/env/**"],
-      exclude: ["**/*.test.{ts,tsx}", "**/__fixtures__/**"],
+      include: ["src/{lib,server,env}/**/*.{ts,tsx}"],
+      exclude: ["**/*.test.*", "**/__fixtures__/**"],
       thresholds: {
         lines: 80,
         functions: 80,
