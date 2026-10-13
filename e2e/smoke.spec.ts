@@ -35,14 +35,20 @@ test.describe("smoke", () => {
     expect(csp).not.toContain("'unsafe-eval'");
   });
 
-  test("page renders without CSP violations", async ({ page }) => {
-    const violations: string[] = [];
-    page.on("console", (message) => {
-      if (message.type() === "error" && message.text().includes("Content Security Policy")) {
-        violations.push(message.text());
-      }
+  for (const { name, path, status } of [
+    { name: "home page", path: "/", status: 200 },
+    { name: "404 page", path: "/does-not-exist", status: 404 },
+  ]) {
+    test(`${name} renders without CSP violations`, async ({ page }) => {
+      const violations: string[] = [];
+      page.on("console", (message) => {
+        if (message.type() === "error" && message.text().includes("Content Security Policy")) {
+          violations.push(message.text());
+        }
+      });
+      const response = await page.goto(path, { waitUntil: "networkidle" });
+      expect(response?.status()).toBe(status);
+      expect(violations).toEqual([]);
     });
-    await page.goto("/", { waitUntil: "networkidle" });
-    expect(violations).toEqual([]);
-  });
+  }
 });
