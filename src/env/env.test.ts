@@ -234,4 +234,10 @@ describe("env modules", () => {
     expect(env).toEqual({ NEXT_PUBLIC_APP_URL: "https://app.example.com" });
     expectTypeOf(env).toEqualTypeOf<{ NEXT_PUBLIC_APP_URL: string }>();
   });
+
+  it("client env honors SKIP_ENV_VALIDATION", async () => {
+    vi.stubEnv("SKIP_ENV_VALIDATION", "1");
+    vi.stubEnv("VERCEL_ENV", "production");
+    await expect(import("@/env/client")).rejects.toThrow(/SKIP_ENV_VALIDATION is not allowed/);
+  });
 });
