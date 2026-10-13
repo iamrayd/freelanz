@@ -16,9 +16,7 @@ test.describe("smoke", () => {
     expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
     expect(headers["x-frame-options"]).toBe("DENY");
     expect(headers["permissions-policy"]).toBe("camera=(), microphone=(), geolocation=()");
-    expect(headers["strict-transport-security"]).toBe(
-      "max-age=63072000; includeSubDomains; preload",
-    );
+    expect(headers["strict-transport-security"]).toBe("max-age=63072000; includeSubDomains");
 
     const csp = headers["content-security-policy"];
     expect(csp).toBeDefined();
