@@ -55,6 +55,23 @@ describe("createEnv", () => {
     expect(message).toContain("at least 32 characters");
   });
 
+  it.each(["javascript:alert(1)", "ftp://freelanz.example.com", "data:text/html,hi"])(
+    "rejects a NEXT_PUBLIC_APP_URL with a non-http(s) scheme: %s",
+    (url) => {
+      expect(parseError({ ...validEnv, NEXT_PUBLIC_APP_URL: url })).toContain(
+        "NEXT_PUBLIC_APP_URL",
+      );
+    },
+  );
+
+  it("accepts http and https NEXT_PUBLIC_APP_URL values", () => {
+    for (const url of ["http://localhost:3000", "https://freelanz.example.com"]) {
+      expect(
+        createEnv(envSchema, { ...validEnv, NEXT_PUBLIC_APP_URL: url }).NEXT_PUBLIC_APP_URL,
+      ).toBe(url);
+    }
+  });
+
   it("rejects a DATABASE_URL that is not a URL", () => {
     expect(parseError({ ...validEnv, DATABASE_URL: "not-a-url" })).toContain("DATABASE_URL");
   });

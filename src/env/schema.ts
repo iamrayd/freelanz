@@ -25,7 +25,8 @@ export const serverSchema = z.object({
 });
 
 export const clientSchema = z.object({
-  NEXT_PUBLIC_APP_URL: z.url().default("http://localhost:3000"),
+  // http/https only: rejects javascript:, data:, ftp: and other schemes.
+  NEXT_PUBLIC_APP_URL: z.url({ protocol: /^https?$/ }).default("http://localhost:3000"),
 });
 
 /** Server + client keys, parsed together so every bad key is reported at once. */
