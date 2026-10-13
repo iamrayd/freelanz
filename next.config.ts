@@ -1,10 +1,10 @@
 import type { NextConfig } from "next";
 
-import { createEnv, envSchema } from "./src/env/schema";
+import { createEnv, envSchema, envSkipMask } from "./src/env/schema";
 
 // Fail fast: validate env when `next dev` / `next build` / `next start` loads
 // this config, not on the first request. Honors SKIP_ENV_VALIDATION=1.
-createEnv(envSchema, process.env);
+createEnv(envSchema, process.env, envSkipMask);
 
 const isDev = process.env.NODE_ENV === "development";
 

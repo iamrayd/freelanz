@@ -1,6 +1,18 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 
-import { clientSchema, createEnv, envSchema, isSkipValidation } from "@/env/schema";
+import {
+  clientSchema,
+  clientSkipMask,
+  createEnv,
+  envSchema,
+  envSkipMask,
+  isSkipValidation,
+} from "@/env/schema";
+
+type Source = Record<string, string | undefined>;
+
+const parseEnv = (source: Source) => createEnv(envSchema, source, envSkipMask);
+const parseClient = (source: Source) => createEnv(clientSchema, source, clientSkipMask);
 
 const validEnv = {
   NODE_ENV: "production",
@@ -16,7 +28,7 @@ const validEnv = {
 
 function parseError(source: Record<string, string | undefined>): string {
   try {
-    createEnv(envSchema, source);
+    parseEnv(source);
   } catch (error) {
     return (error as Error).message;
   }
@@ -25,21 +37,21 @@ function parseError(source: Record<string, string | undefined>): string {
 
 describe("createEnv", () => {
   it("accepts a fully valid env and returns typed values", () => {
-    const env = createEnv(envSchema, validEnv);
+    const env = parseEnv(validEnv);
     expect(env.DATABASE_URL).toBe(validEnv.DATABASE_URL);
     expect(env.CRON_SECRET).toHaveLength(32);
     expect(env.NEXT_PUBLIC_APP_URL).toBe("https://freelanz.example.com");
   });
 
   it("accepts an empty env and applies defaults (all keys optional for now)", () => {
-    const env = createEnv(envSchema, {});
+    const env = parseEnv({});
     expect(env.NODE_ENV).toBe("development");
     expect(env.NEXT_PUBLIC_APP_URL).toBe("http://localhost:3000");
     expect(env.DATABASE_URL).toBeUndefined();
   });
 
   it("treats empty strings (copied from .env.example) as unset", () => {
-    const env = createEnv(envSchema, {
+    const env = parseEnv({
       DATABASE_URL: "",
       CRON_SECRET: "",
       NEXT_PUBLIC_APP_URL: "",
@@ -50,7 +62,7 @@ describe("createEnv", () => {
   });
 
   it("treats whitespace-only values as unset", () => {
-    const env = createEnv(envSchema, {
+    const env = parseEnv({
       DATABASE_URL: "   ",
       CRON_SECRET: "\t",
       NEXT_PUBLIC_APP_URL: " \n ",
@@ -77,9 +89,7 @@ describe("createEnv", () => {
 
   it("accepts http and https NEXT_PUBLIC_APP_URL values", () => {
     for (const url of ["http://localhost:3000", "https://freelanz.example.com"]) {
-      expect(
-        createEnv(envSchema, { ...validEnv, NEXT_PUBLIC_APP_URL: url }).NEXT_PUBLIC_APP_URL,
-      ).toBe(url);
+      expect(parseEnv({ ...validEnv, NEXT_PUBLIC_APP_URL: url }).NEXT_PUBLIC_APP_URL).toBe(url);
     }
   });
 
@@ -105,16 +115,14 @@ describe("createEnv", () => {
   });
 
   it("returns only schema keys, never the rest of the source", () => {
-    const env = createEnv(envSchema, { ...validEnv, PATH: "/usr/bin", SOME_SECRET: "leak" });
+    const env = parseEnv({ ...validEnv, PATH: "/usr/bin", SOME_SECRET: "leak" });
     expect(env).not.toHaveProperty("PATH");
     expect(env).not.toHaveProperty("SOME_SECRET");
   });
 
   it("validates the client schema on its own", () => {
-    expect(createEnv(clientSchema, {}).NEXT_PUBLIC_APP_URL).toBe("http://localhost:3000");
-    expect(() => createEnv(clientSchema, { NEXT_PUBLIC_APP_URL: "nope" })).toThrow(
-      /NEXT_PUBLIC_APP_URL/,
-    );
+    expect(parseClient({}).NEXT_PUBLIC_APP_URL).toBe("http://localhost:3000");
+    expect(() => parseClient({ NEXT_PUBLIC_APP_URL: "nope" })).toThrow(/NEXT_PUBLIC_APP_URL/);
   });
 });
 
@@ -124,7 +132,7 @@ describe("createEnv with SKIP_ENV_VALIDATION", () => {
   });
 
   it("returns only schema keys", () => {
-    const env = createEnv(envSchema, {
+    const env = parseEnv({
       SKIP_ENV_VALIDATION: "1",
       PATH: "/usr/bin",
       SOME_SECRET: "leak",
@@ -137,28 +145,51 @@ describe("createEnv with SKIP_ENV_VALIDATION", () => {
   });
 
   it("applies defaults", () => {
-    const env = createEnv(envSchema, { SKIP_ENV_VALIDATION: "1" });
+    const env = parseEnv({ SKIP_ENV_VALIDATION: "1" });
     expect(env.NODE_ENV).toBe("development");
     expect(env.NEXT_PUBLIC_APP_URL).toBe("http://localhost:3000");
     expect(env.DATABASE_URL).toBeUndefined();
   });
 
   it("still rejects values that are present but invalid", () => {
-    expect(() => createEnv(envSchema, { SKIP_ENV_VALIDATION: "1", CRON_SECRET: "short" })).toThrow(
+    expect(() => parseEnv({ SKIP_ENV_VALIDATION: "1", CRON_SECRET: "short" })).toThrow(
       /CRON_SECRET/,
     );
   });
 
   it("is refused when VERCEL_ENV=production", () => {
     vi.stubEnv("VERCEL_ENV", "production");
-    expect(() => createEnv(envSchema, { SKIP_ENV_VALIDATION: "1" })).toThrow(
+    expect(() => parseEnv({ SKIP_ENV_VALIDATION: "1" })).toThrow(
       /not allowed when VERCEL_ENV=production/,
     );
   });
 
   it("is allowed on Vercel preview deployments", () => {
     vi.stubEnv("VERCEL_ENV", "preview");
-    expect(() => createEnv(envSchema, { SKIP_ENV_VALIDATION: "1" })).not.toThrow();
+    expect(() => parseEnv({ SKIP_ENV_VALIDATION: "1" })).not.toThrow();
+  });
+});
+
+describe("createEnv types", () => {
+  it("keeps precise key types and rejects unknown keys", () => {
+    const env = parseEnv({});
+    expectTypeOf(env.NEXT_PUBLIC_APP_URL).toEqualTypeOf<string>();
+    expectTypeOf(env.CRON_SECRET).toEqualTypeOf<string | undefined>();
+    expectTypeOf(env.NODE_ENV).toEqualTypeOf<"development" | "test" | "production">();
+    // @ts-expect-error unknown keys are a compile error, not `any`
+    void env.NOT_A_KEY;
+
+    const clientEnv = parseClient({});
+    expectTypeOf(clientEnv.NEXT_PUBLIC_APP_URL).toEqualTypeOf<string>();
+    // @ts-expect-error the client env has no server keys
+    void clientEnv.CRON_SECRET;
+  });
+
+  it("makes masked keys optional only in the skip-mode type", () => {
+    const env = createEnv(envSchema, {}, { NEXT_PUBLIC_APP_URL: true });
+    expectTypeOf(env.NEXT_PUBLIC_APP_URL).toEqualTypeOf<string | undefined>();
+    // @ts-expect-error mask keys must exist in the schema
+    createEnv(envSchema, {}, { NOT_A_KEY: true });
   });
 });
 
@@ -186,6 +217,8 @@ describe("env modules", () => {
     const { env } = await import("@/env/server");
     expect(env.CRON_SECRET).toBe("y".repeat(40));
     expect(env.NEXT_PUBLIC_APP_URL).toBe("https://app.example.com");
+    expectTypeOf(env.NEXT_PUBLIC_APP_URL).toEqualTypeOf<string>();
+    expectTypeOf(env.CRON_SECRET).toEqualTypeOf<string | undefined>();
   });
 
   it("server env fails fast on import when invalid", async () => {
@@ -199,5 +232,6 @@ describe("env modules", () => {
     vi.stubEnv("CRON_SECRET", "z".repeat(40));
     const { env } = await import("@/env/client");
     expect(env).toEqual({ NEXT_PUBLIC_APP_URL: "https://app.example.com" });
+    expectTypeOf(env).toEqualTypeOf<{ NEXT_PUBLIC_APP_URL: string }>();
   });
 });

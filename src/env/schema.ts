@@ -57,7 +57,19 @@ function formatIssues(issues: readonly z.core.$ZodIssue[]): string {
   return `Invalid environment variables:\n${lines.join("\n")}\nSee .env.example. Set SKIP_ENV_VALIDATION=1 to bypass (CI only).`;
 }
 
-function parseOrThrow<S extends z.ZodObject>(schema: S, source: Source): z.infer<S> {
+/**
+ * Keys that are required in production but may be absent when
+ * `SKIP_ENV_VALIDATION` is set (CI builds without secrets). Empty today: every
+ * key is optional or has a default. FLZ-11, FLZ-14 and FLZ-20 make keys
+ * required; add each newly required key to its schema AND to these masks.
+ */
+export const envSkipMask = {};
+export const clientSkipMask = {};
+
+function parseOrThrow<Shape extends z.ZodRawShape>(
+  schema: z.ZodObject<Shape>,
+  source: Source,
+): z.infer<z.ZodObject<Shape>> {
   const result = schema.safeParse(withoutEmpty(source));
   if (!result.success) {
     throw new Error(formatIssues(result.error.issues));
@@ -69,21 +81,25 @@ function parseOrThrow<S extends z.ZodObject>(schema: S, source: Source): z.infer
  * Parses `source` against `schema` and returns only the schema's keys.
  * Throws a readable error on failure.
  *
- * When `SKIP_ENV_VALIDATION` is set, missing keys are allowed (the schema is
- * parsed as `.partial()`) so builds without secrets still work. Defaults are
- * still applied and values that are present are still validated. Skipping is
- * refused on Vercel production deployments.
+ * When `SKIP_ENV_VALIDATION` is set, the keys in `skippable` may be missing
+ * (the schema is parsed as `.partial(skippable)`) so builds without secrets
+ * still work. Defaults are still applied and values that are present are still
+ * validated. Skipping is refused on Vercel production deployments.
  */
-export function createEnv<T extends z.ZodObject>(
-  schema: T,
+export function createEnv<
+  Shape extends z.ZodRawShape,
+  M extends z.core.util.Exactly<z.core.util.Mask<keyof Shape>, M>,
+>(
+  schema: z.ZodObject<Shape>,
   source: Source,
+  skippable: M,
   skipValidation = isSkipValidation(source),
 ) {
   if (skipValidation) {
     if (process.env.VERCEL_ENV === "production") {
       throw new Error("SKIP_ENV_VALIDATION is not allowed when VERCEL_ENV=production.");
     }
-    return parseOrThrow(schema.partial(), source);
+    return parseOrThrow(schema.partial(skippable), source);
   }
   return parseOrThrow(schema, source);
 }
