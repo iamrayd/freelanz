@@ -28,7 +28,7 @@
 | UI kit | `src/components/` | Presentational. No data access. |
 | Domain logic | `src/lib/` | Pure functions (ranking, scam heuristics, formatting). No I/O. Fully unit-tested. |
 | Server | `src/server/` | DB, auth, ingestion. Every file imports `server-only`. |
-| Env | `src/env.ts` | zod-validated environment. The only place `process.env` is read. |
+| Env | `src/env/` | zod-validated environment. The only place `process.env` is read. Server code imports `@/env/server` (`server-only`, all keys); client code imports `@/env/client` (`NEXT_PUBLIC_*` only). Schemas live in `schema.ts`; `next.config.ts` validates at startup. |
 
 ## Ingestion
 
