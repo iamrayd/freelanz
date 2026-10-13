@@ -38,9 +38,14 @@ export type ClientEnv = z.infer<typeof clientSchema>;
 
 type Source = Record<string, string | undefined>;
 
-/** Treat `KEY=` (empty string, as copied from .env.example) as unset. */
+/**
+ * Treat `KEY=` (empty string, as copied from .env.example) and whitespace-only
+ * values as unset.
+ */
 function withoutEmpty(source: Source): Source {
-  return Object.fromEntries(Object.entries(source).filter(([, value]) => value !== ""));
+  return Object.fromEntries(
+    Object.entries(source).filter(([, value]) => value === undefined || value.trim() !== ""),
+  );
 }
 
 /** Builds a readable error that names the bad keys but never prints their values. */

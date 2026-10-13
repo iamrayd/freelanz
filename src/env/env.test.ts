@@ -49,6 +49,17 @@ describe("createEnv", () => {
     expect(env.NEXT_PUBLIC_APP_URL).toBe("http://localhost:3000");
   });
 
+  it("treats whitespace-only values as unset", () => {
+    const env = createEnv(envSchema, {
+      DATABASE_URL: "   ",
+      CRON_SECRET: "\t",
+      NEXT_PUBLIC_APP_URL: " \n ",
+    });
+    expect(env.DATABASE_URL).toBeUndefined();
+    expect(env.CRON_SECRET).toBeUndefined();
+    expect(env.NEXT_PUBLIC_APP_URL).toBe("http://localhost:3000");
+  });
+
   it("rejects a CRON_SECRET shorter than 32 characters", () => {
     const message = parseError({ ...validEnv, CRON_SECRET: "x".repeat(31) });
     expect(message).toContain("CRON_SECRET");
