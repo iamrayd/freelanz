@@ -61,3 +61,8 @@ Acceptance notes:
 | FLZ-40 | Upwork official API adapter (needs approved API key). |
 | FLZ-50 | Daily email digest (Resend). |
 | FLZ-51 | Application tracker kanban. |
+
+## Tech debt
+| ID | Item | When |
+|---|---|---|
+| FLZ-48 | Split `src/env/schema.ts` into shared core + `client-schema.ts` + `server-schema.ts` so importing `@/env/client` doesn't ship server key names and zod (~107 KB) to the browser. QA finding on FLZ-3. | Before the first client component imports `@/env/client` |
