@@ -11,6 +11,7 @@ export const env = createEnv(
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     // Not NEXT_PUBLIC_*, so undefined in the browser bundle; honored on the server.
     SKIP_ENV_VALIDATION: process.env.SKIP_ENV_VALIDATION,
+    VERCEL_ENV: process.env.VERCEL_ENV,
   },
   clientSkipMask,
 );

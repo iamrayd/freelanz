@@ -96,7 +96,7 @@ export function createEnv<
   skipValidation = isSkipValidation(source),
 ) {
   if (skipValidation) {
-    if (process.env.VERCEL_ENV === "production") {
+    if (source.VERCEL_ENV === "production") {
       throw new Error("SKIP_ENV_VALIDATION is not allowed when VERCEL_ENV=production.");
     }
     return parseOrThrow(schema.partial(skippable), source);

@@ -127,10 +127,6 @@ describe("createEnv", () => {
 });
 
 describe("createEnv with SKIP_ENV_VALIDATION", () => {
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
   it("returns only schema keys", () => {
     const env = parseEnv({
       SKIP_ENV_VALIDATION: "1",
@@ -158,15 +154,19 @@ describe("createEnv with SKIP_ENV_VALIDATION", () => {
   });
 
   it("is refused when VERCEL_ENV=production", () => {
-    vi.stubEnv("VERCEL_ENV", "production");
-    expect(() => parseEnv({ SKIP_ENV_VALIDATION: "1" })).toThrow(
+    expect(() => parseEnv({ SKIP_ENV_VALIDATION: "1", VERCEL_ENV: "production" })).toThrow(
       /not allowed when VERCEL_ENV=production/,
     );
   });
 
   it("is allowed on Vercel preview deployments", () => {
-    vi.stubEnv("VERCEL_ENV", "preview");
-    expect(() => parseEnv({ SKIP_ENV_VALIDATION: "1" })).not.toThrow();
+    expect(() => parseEnv({ SKIP_ENV_VALIDATION: "1", VERCEL_ENV: "preview" })).not.toThrow();
+  });
+
+  it("does not return VERCEL_ENV", () => {
+    expect(parseEnv({ SKIP_ENV_VALIDATION: "1", VERCEL_ENV: "preview" })).not.toHaveProperty(
+      "VERCEL_ENV",
+    );
   });
 });
 
